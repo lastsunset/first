@@ -2,10 +2,79 @@ language: cpp
 
 branches:
   only:
-    - master
+    - main
     - dev
     - /\d+\.\d+/
   
+jobs:
+  include:
+    - name: MacOS
+      os: osx
+      osx_image: xcode12.5
+      
+      env:
+        - QT_VERSION=5.15.2
+        - QIF_VERSION=4.1
+        - QT_BIN_DIR=$HOME/Qt/$QT_VERSION/clang_64/bin
+        - QIF_BIN_DIR=$QT_BIN_DIR/../../../Tools/QtInstallerFramework/$QIF_VERSION/bin
+         
+      script:
+        - |
+          if [ ! -f $HOME/Qt/$QT_VERSION/clang_64/bin/qmake ]; then \
+          brew install p7zip && \
+          python3 -m pip install --upgrade pip && \
+          pip install -U aqtinstall requests py7zr && \
+          pip show aqtinstall && \
+          python3 -m aqt install --outputdir $HOME/Qt $QT_VERSION mac desktop clang_64 -m qtbase && \
+          python3 -m aqt tool --outputdir $HOME/Qt mac tools_ifw $QIF_VERSION qt.tools.ifw.${QIF_VERSION/./};
+          fi
+        - bash deploy/build_macos.sh 
+
+      deploy:
+        provider: releases
+        token: $GH_TOKEN
+        skip_cleanup: true
+        file:
+        - "AmneziaVPN_unsigned.dmg"
+        on:
+          tags: true
+          branch: main
+    
+    - name: Windows_x64
+      os: windows
+      
+      env:
+        - PATH=/c/Python39:/c/Python39/Scripts:$PATH
+        - QT_VERSION=5.14.2
+        - QIF_VERSION=4.1
+        - QT_BIN_DIR="c:\\Qt\\$QT_VERSION\\msvc2017_64\\bin"
+        - QIF_BIN_DIR="c:\\Qt\\Tools\\QtInstallerFramework\\${QIF_VERSION}\\bin"
+        - BUILD_ARCH=64
+        
+      before_install:
+        - if [ ! -f /C/Qt/$QT_VERSION/msvc2017_64/bin/qmake ]; then choco install python --version 3.9.1; fi
+        
+      script:
+        - dir "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Auxiliary\Build"
+        - dir "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\Common7\Tools"
+        - |
+          if [ ! -f /C/Qt/$QT_VERSION/msvc2017_64/bin/qmake ]; then \
+          python -m pip install --upgrade pip && \
+          pip3 install -U aqtinstall requests py7zr && \
+          pip3 show aqtinstall && \
+          python -m aqt install --outputdir /C/Qt $QT_VERSION windows desktop win64_msvc2017_64 -m qtbase && \
+          python -m aqt tool --outputdir /C/Qt windows tools_ifw $QIF_VERSION qt.tools.ifw.${QIF_VERSION/./}; \
+          fi
+        - echo set BUILD_ARCH=$BUILD_ARCH > winbuild.bat
+        - echo set QT_BIN_DIR="$QT_BIN_DIR" >> winbuild.bat
+        - echo set QIF_BIN_DIR="$QIF_BIN_DIR" >> winbuild.bat
+        - echo call \""C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\BuildTools\\VC\\Auxiliary\\Build\\vcvars${BUILD_ARCH}.bat\"" >> winbuild.bat
+        - echo call \""C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\BuildTools\\Common7\\Tools\\VsDevCmd.bat\" -arch=amd64" >> winbuild.bat
+        - echo set WIN_CERT_PW=$WIN_CERT_PW >> winbuild.bat
+        - echo call deploy\\build_windows.bat >> winbuild.bat
+        - cmd //c winbuild.bat
+
+        
       deploy:
         provider: releases
         token: $GH_TOKEN
@@ -13,7 +82,8 @@ branches:
         file:
         - "AmneziaVPN_x64.exe"
         on:
-          branch: master
+          tags: true
+          branch: main
 
     - name: Windows_x32
       os: windows
@@ -56,7 +126,8 @@ branches:
         file:
         - "AmneziaVPN_x32.exe"
         on:
-          branch: master
+          tags: true
+          branch: main
 
 deploy:
   skip_cleanup: true
