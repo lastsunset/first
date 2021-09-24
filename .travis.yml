@@ -2,7 +2,7 @@ language: cpp
 
 branches:
   only:
-    - main
+    - master
     - dev
     - /\d+\.\d+/
   
@@ -38,7 +38,7 @@ jobs:
         - "AmneziaVPN_unsigned.dmg"
         on:
           tags: true
-          branch: main
+          branch: master
     
     - name: Windows_x64
       os: windows
@@ -83,7 +83,7 @@ jobs:
         - "AmneziaVPN_x64.exe"
         on:
           tags: true
-          branch: main
+          branch: master
 
     - name: Windows_x32
       os: windows
@@ -127,7 +127,7 @@ jobs:
         - "AmneziaVPN_x32.exe"
         on:
           tags: true
-          branch: main
+          branch: master
 
 deploy:
   skip_cleanup: true
